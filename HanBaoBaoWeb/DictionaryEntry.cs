@@ -5,6 +5,7 @@ using Orleans.Runtime;
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace HanBaoBao
 {
@@ -46,22 +47,22 @@ namespace HanBaoBao
         }
     }
 
-    [Serializable]
+    [GenerateSerializer]
     public class TermDefinition
-    {
-        public long Id { get; set; }
-        public string Simplified { get; set; }
-        public string Traditional { get; set; }
-        public string Pinyin { get; set; }
-        public string Definition { get; set; }
-        public string Classifier { get; set; }
-        public string Concept { get; set; }
-        public int HskLevel { get; set; }
-        public string Topic { get; set; }
-        public string ParentTopic { get; set; }
-        public string Notes { get; set; }
-        public double Frequency { get; set; }
-        public List<string> PartOfSpeech { get; set; }
+    {        
+        [Id(0)] public long Id { get; set; }
+        [Id(1)] public string Simplified { get; set; } = "";
+        [Id(2)] public string Traditional { get; set; } = "";
+        [Id(3)] public string Pinyin { get; set; } = "";
+        [Id(4)] public string Definition { get; set; } = "";
+        [Id(5)] public string Classifier { get; set; } = "";
+        [Id(6)] public string Concept { get; set; } = "";
+        [Id(7)] public int HskLevel { get; set; }
+        [Id(8)] public string Topic { get; set; } = "";
+        [Id(9)] public string ParentTopic { get; set; } = "";
+        [Id(10)] public string Notes { get; set; } = "";
+        [Id(11)] public double Frequency { get; set; }
+        [Id(12)] public List<string> PartOfSpeech { get; set; } = new List<string>();
     }
 
     internal interface IDictionaryEntryGrain : IGrainWithStringKey
@@ -86,10 +87,16 @@ namespace HanBaoBao
             _referenceDataService = referenceDataService;
         }
 
-        public override async Task OnActivateAsync()
+        public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
+            // Initialize state if it's null
+            if (_state.State is null)
+            {
+                _state.State = new DictionaryEntryState();
+            }
+
             // If there is no state saved for this entry yet, load the state from the reference dictionary and store it.
-            if (_state.State?.Definition is null)
+            if (_state.State.Definition is null)
             {
                 // Find the definiton from the reference data, using this grain's id to look it up
                 var headword = this.GetPrimaryKeyString();
@@ -117,12 +124,12 @@ namespace HanBaoBao
         }
 
         public Task<TermDefinition> GetDefinitionAsync()
-            => Task.FromResult(_state.State.Definition);
+            => Task.FromResult(_state.State.Definition ?? new TermDefinition());
     }
 
-    [Serializable]
+    [GenerateSerializer]
     internal class DictionaryEntryState
     {
-        public TermDefinition Definition { get; set; }
+        [Id(0)] public TermDefinition? Definition { get; set; }
     }
 }

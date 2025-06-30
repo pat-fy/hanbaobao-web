@@ -43,11 +43,6 @@ namespace HanBaoBao
 
         public async Task Invoke(IIncomingGrainCallContext context)
         {
-            if (context.Arguments?.FirstOrDefault() is string phrase && string.Equals("please", phrase))
-            {
-                _throttleScore = 0;
-            }
-
             // Work out how long it's been since the last call
             var elapsedSeconds = _stopwatch.Elapsed.TotalSeconds;
             _stopwatch.Restart();
